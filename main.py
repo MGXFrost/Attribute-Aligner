@@ -4,12 +4,11 @@ import PySimpleGUI as sg
 import pyperclip
 from html.parser import HTMLParser
 
-a = 'dwwdwfgerfergerg'
 #Отступ между атрибутами
 additionalWhitspace = 1
 #Приоритеты. Только один атрибут из группы может быть у элемента!
 priorities = [
-    ('cmptype'),
+    ['cmptype'],
     ['name'],
     ['src'],
     ['srctype'],
