@@ -3,7 +3,9 @@ import pyperclip
 from html.parser import HTMLParser
 
 #Отступ между атрибутами
-additionalWhitspace = 1
+additionalWhitespace = 1
+#Отступ после тэга
+tagWhitespace = 1
 #Приоритеты. Только один атрибут из группы может быть у элемента!
 priorities = [
     ['cmptype'],
@@ -50,12 +52,27 @@ layout = [
     [sg.Button("Clear input")],
     [sg.Text("Output")],
     [sg.Multiline(size=(100, 15), key="Output", font='Consolas 12', horizontal_scroll=True)],
-    [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output")]
+    [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
 ]
 
 # Create the window
 window = sg.Window(title = "Attribute Sorter&Aligner V0.1", layout = layout)
 parser = MyHTMLParser()
+
+cat = """
+           ,     ,
+           |\."./|
+          / _   _ \\
+         / (-) (-) \  _
+         \==  Y  ==/ ( \\
+          ;-._^_.-;   ) )
+         /   \_/   \ / /
+         |   (_)   |/ /
+        /|  |   |  |\/
+       | |  |   |  | |
+        \|  |___|  |/
+         '""'   '""'
+"""
 
 # Create an event loop
 while True:
@@ -67,6 +84,8 @@ while True:
         window.Element('Input').update(value='')
     elif event == "Copy output":
         pyperclip.copy(values['Output'])
+    elif event == "Cat":
+        window.Element('Output').update(value=cat)
     elif event == 'Format' or event == 'Format from clipboard':
         inputStr = ''
         if event == 'Format from clipboard':
@@ -98,7 +117,7 @@ while True:
         #Создаем новые строки
         result = ''
         for el in parser.rows:
-            row = '<' + el['tag'] + ' ' * (maxTagLength - len(el['tag']) + additionalWhitspace)
+            row = '<' + el['tag'] + ' ' * (maxTagLength - len(el['tag']) + tagWhitespace)
             #Расставляем атрибуты с приоритетом
             for priority in priorities:
                 attrAvailable = False
@@ -108,19 +127,19 @@ while True:
                         attrAvailable = True
                         aVal = el['attrs'].get(attr, None)
                         if aVal != None:
-                            row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitspace)
+                            row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitespace)
                             hasAttr = True
                             break
                 if attrAvailable and not hasAttr:
-                    row += ' ' * (len(attr) + findMaxlen(priority, availableAttrs) + 3 + additionalWhitspace)                      
+                    row += ' ' * (len(attr) + findMaxlen(priority, availableAttrs) + 3 + additionalWhitespace)                      
             #Затем атрибуты без приоритета
             for attr in availableAttrs:
                 if availableAttrs[attr]['priority'] == -1:
                     aVal = el['attrs'].get(attr, None)
                     if aVal != None:
-                        row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitspace)
+                        row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitespace)
                     else:
-                        row += ' ' * (len(attr) + availableAttrs[attr]['maxlen'] + 3 + additionalWhitspace)
+                        row += ' ' * (len(attr) + availableAttrs[attr]['maxlen'] + 3 + additionalWhitespace)
             #Закрываем строку
             result += row.rstrip() + '/>\n'
             
