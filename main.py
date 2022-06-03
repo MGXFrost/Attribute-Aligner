@@ -1,5 +1,3 @@
-from asyncio.windows_events import NULL
-from cmath import nan
 import PySimpleGUI as sg
 import pyperclip
 from html.parser import HTMLParser
@@ -108,8 +106,8 @@ while True:
                 for attr in priority:
                     if attr in availableAttrs:
                         attrAvailable = True
-                        aVal = el['attrs'].get(attr, NULL)
-                        if aVal != NULL:
+                        aVal = el['attrs'].get(attr, None)
+                        if aVal != None:
                             row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitspace)
                             hasAttr = True
                             break
@@ -118,8 +116,8 @@ while True:
             #Затем атрибуты без приоритета
             for attr in availableAttrs:
                 if availableAttrs[attr]['priority'] == -1:
-                    aVal = el['attrs'].get(attr, NULL)
-                    if aVal != NULL:
+                    aVal = el['attrs'].get(attr, None)
+                    if aVal != None:
                         row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitspace)
                     else:
                         row += ' ' * (len(attr) + availableAttrs[attr]['maxlen'] + 3 + additionalWhitspace)
