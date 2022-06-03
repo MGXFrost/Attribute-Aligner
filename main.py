@@ -46,10 +46,10 @@ class MyHTMLParser(HTMLParser):
         
 layout = [
     [sg.Text("Input")],
-    [sg.Multiline(size=(100, 15), key="Input", font='Consolas 12')],
+    [sg.Multiline(size=(100, 15), key="Input", font='Consolas 12', horizontal_scroll=True)],
     [sg.Button("Clear input")],
     [sg.Text("Output")],
-    [sg.Multiline(size=(100, 15), key="Output", font='Consolas 12')],
+    [sg.Multiline(size=(100, 15), key="Output", font='Consolas 12', horizontal_scroll=True)],
     [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output")]
 ]
 
