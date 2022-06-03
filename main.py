@@ -33,17 +33,13 @@ def findMaxlen(arr, dict1):
 
 
 class MyHTMLParser(HTMLParser):
-    outStr = ''
     rows = []
     def handle_starttag(self, tag, attrs):
         entry = {'tag': tag, 'attrs': {}}
-        self.outStr += 'Start tag:' + str(tag) + '\n'
         for attr in attrs:
             entry['attrs'][attr[0]] = attr[1]
-            self.outStr += 'attr:' + str(attr) + '\n'
         self.rows.append(entry)
     def init_arrays(self):
-        self.outStr = ''
         self.rows = []
         
 layout = [
