@@ -6,14 +6,19 @@ from html.parser import HTMLParser
 additionalWhitespace = 1
 #Отступ после тэга
 tagWhitespace = 1
-#Приоритеты. Только один атрибут из группы может быть у элемента!
+#Приоритеты атрибутов. Атрибуты в одной группе (на одном уровне приоритета) взаимоисключающие!
 priorities = [
     ['cmptype'],
     ['name'],
+    #ActionVar
     ['src'],
     ['srctype'],
     ['put', 'get'],
-    ['len']
+    ['len'],
+    #PopupItem
+    ['caption'],
+    ['onclick'],
+    ['std_icon']
 ]
 
 def getPriority(attr):
@@ -21,16 +26,6 @@ def getPriority(attr):
         if attr in val: 
             return i
     return -1
-
-#TODO временный костыль. Переделать availableAttrs под вид priorities
-def findMaxlen(arr, dict1):
-    maxlen = 0
-    for a in arr:
-        if a in dict1:
-            if dict1[a]['maxlen'] > maxlen:
-                maxlen = dict1[a]['maxlen']
-    return maxlen
-
 
 class MyHTMLParser(HTMLParser):
     rows = []
@@ -104,38 +99,64 @@ while True:
             for attr in el['attrs']:
                 if attr not in availableAttrs:
                     availableAttrs[attr] = {
-                        'priority': getPriority(attr),
+                        'count': 1,
                         'maxlen': len(el['attrs'][attr])
                     }
-                elif availableAttrs[attr]['maxlen'] < len(el['attrs'][attr]):
-                    availableAttrs[attr]['maxlen'] = len(el['attrs'][attr])
+                else:
+                    availableAttrs[attr]['count'] += 1
+                    if availableAttrs[attr]['maxlen'] < len(el['attrs'][attr]):
+                        availableAttrs[attr]['maxlen'] = len(el['attrs'][attr])
+        
+        #Сортируем атрибуты
+        outputOrder = []
+        #Сортировка по приоритетам
+        for priority in priorities:
+            entry = {
+                'attrs': [],
+                'maxlen': 0
+            }
+            for attr in priority:
+                if attr in availableAttrs:
+                    entry['attrs'] += [attr]
+                    if entry['maxlen'] < availableAttrs[attr]['maxlen']:
+                        entry['maxlen'] = availableAttrs[attr]['maxlen']
+                    #убираем атрибут
+                    del availableAttrs[attr]
+            if len(entry['attrs']) > 0:
+                outputOrder += [entry]
+        #Сортировка остального
+        while len(availableAttrs) > 0:
+            #сортировка по количеству вхождений
+            maxAttr = ''
+            maxCount = 0
+            
+            for attr in availableAttrs:
+                if maxCount < availableAttrs[attr]['count']:
+                    maxCount = availableAttrs[attr]['count']
+                    maxAttr = attr
+
+            outputOrder += [{
+                'attrs': [maxAttr],
+                'maxlen': availableAttrs[maxAttr]['maxlen']
+            }]
+
+            del availableAttrs[maxAttr]
 
         #Создаем новые строки
         result = ''
         for el in parser.rows:
             row = '<' + el['tag'] + ' ' * (maxTagLength - len(el['tag']) + tagWhitespace)
             #Расставляем атрибуты с приоритетом
-            for priority in priorities:
-                attrAvailable = False
+            for order in outputOrder:
                 hasAttr = False
-                for attr in priority:
-                    if attr in availableAttrs:
-                        attrAvailable = True
-                        aVal = el['attrs'].get(attr, None)
-                        if aVal != None:
-                            row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitespace)
-                            hasAttr = True
-                            break
-                if attrAvailable and not hasAttr:
-                    row += ' ' * (len(attr) + findMaxlen(priority, availableAttrs) + 3 + additionalWhitespace)                      
-            #Затем атрибуты без приоритета
-            for attr in availableAttrs:
-                if availableAttrs[attr]['priority'] == -1:
-                    aVal = el['attrs'].get(attr, None)
-                    if aVal != None:
-                        row += attr + '="' + aVal + '"' + ' ' * (availableAttrs[attr]['maxlen'] - len(aVal) + additionalWhitespace)
-                    else:
-                        row += ' ' * (len(attr) + availableAttrs[attr]['maxlen'] + 3 + additionalWhitespace)
+                #Пробегаемся по всем доступным атрибутам
+                for attr in order['attrs']:
+                    if attr in el['attrs']:
+                        row += attr + '="' + el['attrs'][attr] + '"' + ' ' * (order['maxlen'] - len(el['attrs'][attr]) + additionalWhitespace)
+                        hasAttr = True
+                        break      
+                if not hasAttr:
+                    row += ' ' * (len(attr) + order['maxlen'] + 3 + additionalWhitespace)    
             #Закрываем строку
             result += row.rstrip() + '/>\n'
             
