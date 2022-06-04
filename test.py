@@ -1,5 +1,7 @@
 import json
 
+def change(vv, val):
+    vv = val
 filename = 'aaa.json'
 #Отступ между атрибутами
 additionalWhitespace = 1
@@ -25,3 +27,7 @@ try:
     f = open(filename, 'r')
 except FileNotFoundError:
     print('fileNotFound')
+int('dwdq')
+b = 2
+change(b, 3)
+print(b)

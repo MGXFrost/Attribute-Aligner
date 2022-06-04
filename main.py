@@ -37,6 +37,67 @@ def getPriority(attr):
             return i
     return -1
 
+def getIntval(val, restirct="any"):
+    try:
+        v = int(val)
+        if restirct == "pos":
+            return abs(v)
+        elif restirct == "neg":
+            return -abs(v)
+        else:
+            return v
+    except ValueError:
+        return None
+
+def updateSettingsIntval(settingName, windowElement, restirct="any"):
+    a1 = getIntval(windowElement.get(), restirct)
+    if a1 == None:
+        windowElement.update(settings[settingName])
+    else:
+        settings[settingName] = a1
+        windowElement.update(a1)
+
+def getSettingsFromForm(window1):
+    updateSettingsIntval('additionalWhitespace', window1.Element('additionalWhitespace'), "pos")
+    updateSettingsIntval('tagWhitespace', window1.Element('tagWhitespace'), "pos")
+    settings['removeBlankSpaceForLastAttr'] = window1.Element('removeBlankSpaceForLastAttr').get()
+
+def putSettingsToForm(window1):
+    window1.Element('additionalWhitespace').update(settings['additionalWhitespace'])
+    window1.Element('tagWhitespace').update(settings['tagWhitespace'])
+    window1.Element('removeBlankSpaceForLastAttr').update(settings['removeBlankSpaceForLastAttr'])
+    settings_priorities = ''
+    for p in settings['priorities']:
+        s = ''
+        for a in p:
+            s += a + ', '
+        settings_priorities += s[:-2] + "\n"
+    window1.Element('settings_priorities').update(settings_priorities)
+
+def saveSettings(fname):
+    configFile = open(fname, 'w')
+    configFile.write(json.dumps(settings, indent="\t"))
+    configFile.close()
+
+def loadSettings(fname):
+    rewriteConfig = False
+    try:
+        configFile = open(fname, 'r')
+        readSettings = json.loads(configFile.read())
+        configFile.close()
+        for stgName in settings:
+            if stgName in readSettings:
+                settings[stgName] = readSettings[stgName]
+            else:
+                rewriteConfig = True
+            
+    except (FileNotFoundError, json.JSONDecodeError):
+        rewriteConfig = True
+
+    if rewriteConfig:
+        saveSettings(fname)
+
+
 class MyHTMLParser(HTMLParser):
     rows = []
     def handle_starttag(self, tag, attrs):
@@ -46,40 +107,8 @@ class MyHTMLParser(HTMLParser):
         self.rows.append(entry)
     def init_arrays(self):
         self.rows = []
-        
-layout = [
-    [sg.Text("Input")],
-    [sg.Multiline(size=(100, 15), key="Input", font='Consolas 12', horizontal_scroll=True)],
-    [sg.Button("Clear input")],
-    [sg.Text("Output")],
-    [sg.Multiline(size=(100, 15), key="Output", font='Consolas 12', horizontal_scroll=True)],
-    [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
-]
 
-# Load configuration
-rewriteConfig = False
-try:
-    configFile = open(filename, 'r')
-    readSettings = json.loads(configFile.read())
-    configFile.close()
-    for stgName in settings:
-        if stgName in readSettings:
-            settings[stgName] = readSettings[stgName]
-        else:
-            rewriteConfig = True
-        
-except (FileNotFoundError, json.JSONDecodeError):
-    rewriteConfig = True
-
-if rewriteConfig:
-        configFile = open(filename, 'w')
-        configFile.write(json.dumps(settings, indent="\t"))
-        configFile.close()
-
-# Create the window
-window = sg.Window(title = "Attribute Sorter&Aligner V0.2", layout = layout)
-parser = MyHTMLParser()
-
+# cat
 cat = """
            ,     ,
            |\."./|
@@ -95,12 +124,48 @@ cat = """
          '""'   '""'
 """
 
+# Create the window
+col1 = [
+    [sg.Text("Input")],
+    [sg.Multiline(size=(90, 15), key="Input", font='Consolas 12', horizontal_scroll=True)],
+    [sg.Button("Clear input")],
+    [sg.Text("Output")],
+    [sg.Multiline(size=(90, 15), key="Output", font='Consolas 12', horizontal_scroll=True)],
+    [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
+]
+col2 = [
+    [sg.Frame("(Debug) Available attributes", [[sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)]])],
+    [sg.Frame("Settings", [
+        [sg.Text("Attribute priorities")],
+        [sg.Multiline(size=(25, 10), expand_x=True, key="settings_priorities", font='Consolas 12', disabled=True)],
+        [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
+        [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
+        [sg.Checkbox('Remove blank space for last attr', key="removeBlankSpaceForLastAttr")],
+        [sg.Button("Save settings")]
+    ])]
+]
+
+layout = [
+    [sg.Column(col1), sg.Column(col2, vertical_alignment="top")]
+]
+
+window = sg.Window(title = "Attribute Sorter&Aligner V0.2", layout = layout, finalize=True)
+parser = MyHTMLParser()
+
+# Load configuration
+loadSettings(filename)
+# Put settings to form
+putSettingsToForm(window)
+
 # Create an event loop
 while True:
     event, values = window.read()
 
     if event == "Close" or event == sg.WIN_CLOSED:
         break
+    elif event == 'Save settings':
+        getSettingsFromForm(window)
+        saveSettings(filename)
     elif event == "Clear input":
         window.Element('Input').update(value='')
     elif event == "Copy output":
@@ -108,6 +173,9 @@ while True:
     elif event == "Cat":
         window.Element('Output').update(value=cat)
     elif event == 'Format' or event == 'Format from clipboard':
+        #Получим настройки с формы
+        getSettingsFromForm(window)
+        
         inputStr = ''
         if event == 'Format from clipboard':
             inputStr = pyperclip.paste()
@@ -175,6 +243,15 @@ while True:
             }]
 
             del availableAttrs[maxAttr]
+
+        # Отображаем атрибуты в окне
+        avAttrStr = ''
+        for p in outputOrder:
+            s = ''
+            for a in p['attrs']:
+                s += a + ', '
+            avAttrStr += s[:-2] + "\n"
+        window.Element('availableAttrs').update(value=avAttrStr)
 
         # Создаем новые строки
         result = ''
