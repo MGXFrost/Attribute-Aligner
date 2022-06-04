@@ -1,30 +1,38 @@
 import PySimpleGUI as sg
 import pyperclip
+import json
 from html.parser import HTMLParser
 
-#Отступ между атрибутами
-additionalWhitespace = 1
-#Отступ после тэга
-tagWhitespace = 1
-#Притягивать последний атрибут, если перед ним пустое место под предыдущий
-removeBlankSpaceForLastAttr = False
-#Приоритеты атрибутов. Атрибуты в одной группе (на одном уровне приоритета) взаимоисключающие!
-priorities = [
-    ['cmptype'],
-    ['name'],
-    #ActionVar
-    ['src'],
-    ['srctype'],
-    ['put', 'get'],
-    ['len'],
-    #PopupItem
-    ['caption'],
-    ['onclick'],
-    ['std_icon']
-]
 
+######################## Default settings ########################
+settings = {
+    # Отступ между атрибутами
+    'additionalWhitespace': 1,
+    # Отступ после тэга
+    'tagWhitespace': 1,
+    # Притягивать последний атрибут, если перед ним пустое место под предыдущий
+    'removeBlankSpaceForLastAttr': False,
+    # Приоритеты атрибутов. Атрибуты в одной группе (на одном уровне приоритета) взаимоисключающие!
+    'priorities': [
+        ['cmptype'],
+        ['name'],
+        #ActionVar
+        ['src'],
+        ['srctype'],
+        ['put', 'get'],
+        ['len'],
+        #PopupItem
+        ['caption'],
+        ['onclick'],
+        ['std_icon']
+    ]
+}
+# Имя файла кофигурации
+filename = 'config.json'
+
+######################## Code ########################
 def getPriority(attr):
-    for i, val in enumerate(priorities):
+    for i, val in enumerate(settings['priorities']):
         if attr in val: 
             return i
     return -1
@@ -48,8 +56,28 @@ layout = [
     [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
 ]
 
+# Load configuration
+rewriteConfig = False
+try:
+    configFile = open(filename, 'r')
+    readSettings = json.loads(configFile.read())
+    configFile.close()
+    for stgName in settings:
+        if stgName in readSettings:
+            settings[stgName] = readSettings[stgName]
+        else:
+            rewriteConfig = True
+        
+except (FileNotFoundError, json.JSONDecodeError):
+    rewriteConfig = True
+
+if rewriteConfig:
+        configFile = open(filename, 'w')
+        configFile.write(json.dumps(settings, indent="\t"))
+        configFile.close()
+
 # Create the window
-window = sg.Window(title = "Attribute Sorter&Aligner V0.1", layout = layout)
+window = sg.Window(title = "Attribute Sorter&Aligner V0.2", layout = layout)
 parser = MyHTMLParser()
 
 cat = """
@@ -86,18 +114,18 @@ while True:
             window.Element('Input').update(value=inputStr)
         else:
             inputStr = str(values['Input'])
-        #Парсим
+        # Парсим
         parser.init_arrays()
         parser.feed(inputStr)
         parser.close()
-        #Создаем список всех атрибутов с порядком
+        # Создаем список всех атрибутов с порядком
         availableAttrs = {}
         maxTagLength = 0
         for el in parser.rows:
-            #Максимальная ширина тэга
+            # Максимальная ширина тэга
             if len(el['tag']) > maxTagLength:
                 maxTagLength = len(el['tag'])
-            #Атрибуты
+            # Атрибуты
             for attr in el['attrs']:
                 if attr not in availableAttrs:
                     availableAttrs[attr] = {
@@ -109,10 +137,10 @@ while True:
                     if availableAttrs[attr]['maxValLen'] < len(el['attrs'][attr]):
                         availableAttrs[attr]['maxValLen'] = len(el['attrs'][attr])
         
-        #Сортируем атрибуты
+        # Сортируем атрибуты
         outputOrder = []
-        #Сортировка по приоритетам
-        for priority in priorities:
+        # Сортировка по приоритетам
+        for priority in settings['priorities']:
             entry = {
                 'attrs': [],
                 'maxValLen': 0,
@@ -125,13 +153,13 @@ while True:
                         entry['maxValLen'] = availableAttrs[attr]['maxValLen']
                     if entry['maxAttrLen'] < len(attr):
                         entry['maxAttrLen'] = len(attr)
-                    #убираем атрибут
+                    # Убираем атрибут
                     del availableAttrs[attr]
             if len(entry['attrs']) > 0:
                 outputOrder += [entry]
-        #Сортировка остального
+        # Сортировка остального
         while len(availableAttrs) > 0:
-            #сортировка по количеству вхождений
+            # Сортировка по количеству вхождений
             maxAttr = ''
             maxCount = 0
             
@@ -148,30 +176,30 @@ while True:
 
             del availableAttrs[maxAttr]
 
-        #Создаем новые строки
+        # Создаем новые строки
         result = ''
         for el in parser.rows:
-            row = '<' + el['tag'] + ' ' * (maxTagLength - len(el['tag']) + tagWhitespace)
-            #Расставляем атрибуты
+            row = '<' + el['tag'] + ' ' * (maxTagLength - len(el['tag']) + settings['tagWhitespace'])
+            # Расставляем атрибуты
             blankAttrSpace = 0
-            #Пробегаемся по приоритетам
+            # Пробегаемся по приоритетам
             for order in outputOrder:
                 rowAttr = None
-                #Пробегаемся по атрибутам внутри приоритета
+                # Пробегаемся по атрибутам внутри приоритета
                 for attr in order['attrs']:
                     aVal = el['attrs'].pop(attr, None)
                     if aVal != None and rowAttr == None:
-                        rowAttr = attr + '="' + aVal + '"' + ' ' * (order['maxAttrLen'] - len(attr) + order['maxValLen'] - len(aVal) + additionalWhitespace)
+                        rowAttr = attr + '="' + aVal + '"' + ' ' * (order['maxAttrLen'] - len(attr) + order['maxValLen'] - len(aVal) + settings['additionalWhitespace'])
                 if rowAttr == None:
-                    blankAttrSpace += order['maxAttrLen'] + order['maxValLen'] + 3 + additionalWhitespace
+                    blankAttrSpace += order['maxAttrLen'] + order['maxValLen'] + 3 + settings['additionalWhitespace']
                 else:
-                    if removeBlankSpaceForLastAttr and len(el['attrs']) == 0:
+                    if settings['removeBlankSpaceForLastAttr'] and len(el['attrs']) == 0:
                         row += rowAttr
                     else:
                         row += ' ' * blankAttrSpace + rowAttr
                     blankAttrSpace = 0
             
-            #Закрываем строку
+            # Закрываем строку
             result += row.rstrip() + '/>\n'
             
         window.Element('Output').update(value=result)

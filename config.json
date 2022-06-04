@@ -1,0 +1,35 @@
+{
+	"additionalWhitespace": 1,
+	"tagWhitespace": 1,
+	"removeBlankSpaceForLastAttr": false,
+	"priorities": [
+		[
+			"cmptype"
+		],
+		[
+			"name"
+		],
+		[
+			"src"
+		],
+		[
+			"srctype"
+		],
+		[
+			"put",
+			"get"
+		],
+		[
+			"len"
+		],
+		[
+			"caption"
+		],
+		[
+			"onclick"
+		],
+		[
+			"std_icon"
+		]
+	]
+}
