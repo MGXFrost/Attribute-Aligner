@@ -31,6 +31,9 @@ settings = {
 filename = 'config.json'
 
 ######################## Code ########################
+inputStr = ''
+inputStrLower = ''
+
 def getPriority(attr):
     for i, val in enumerate(settings['priorities']):
         if attr in val: 
@@ -130,7 +133,9 @@ def loadSettings(fname):
 class MyHTMLParser(HTMLParser):
     rows = []
     def handle_starttag(self, tag, attrs):
-        entry = {'tag': tag, 'attrs': {}}
+        # Костыль для сохранения регистра букв
+        ind = inputStrLower.find(tag)
+        entry = {'tag': inputStr[ind:(ind + len(tag))], 'attrs': {}}
         for attr in attrs:
             entry['attrs'][attr[0]] = attr[1]
         self.rows.append(entry)
@@ -214,6 +219,8 @@ while True:
             window.Element('Input').update(value=inputStr)
         else:
             inputStr = str(values['Input'])
+
+        inputStrLower = inputStr.lower()
         # Парсим
         parser.init_arrays()
         parser.feed(inputStr)
