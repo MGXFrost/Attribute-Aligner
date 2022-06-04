@@ -6,6 +6,8 @@ from html.parser import HTMLParser
 additionalWhitespace = 1
 #Отступ после тэга
 tagWhitespace = 1
+#Притягивать последний атрибут, если перед ним пустое место под предыдущий
+removeBlankSpaceForLastAttr = False
 #Приоритеты атрибутов. Атрибуты в одной группе (на одном уровне приоритета) взаимоисключающие!
 priorities = [
     ['cmptype'],
@@ -100,12 +102,12 @@ while True:
                 if attr not in availableAttrs:
                     availableAttrs[attr] = {
                         'count': 1,
-                        'maxlen': len(el['attrs'][attr])
+                        'maxValLen': len(el['attrs'][attr])
                     }
                 else:
                     availableAttrs[attr]['count'] += 1
-                    if availableAttrs[attr]['maxlen'] < len(el['attrs'][attr]):
-                        availableAttrs[attr]['maxlen'] = len(el['attrs'][attr])
+                    if availableAttrs[attr]['maxValLen'] < len(el['attrs'][attr]):
+                        availableAttrs[attr]['maxValLen'] = len(el['attrs'][attr])
         
         #Сортируем атрибуты
         outputOrder = []
@@ -113,13 +115,16 @@ while True:
         for priority in priorities:
             entry = {
                 'attrs': [],
-                'maxlen': 0
+                'maxValLen': 0,
+                'maxAttrLen': 0
             }
             for attr in priority:
                 if attr in availableAttrs:
                     entry['attrs'] += [attr]
-                    if entry['maxlen'] < availableAttrs[attr]['maxlen']:
-                        entry['maxlen'] = availableAttrs[attr]['maxlen']
+                    if entry['maxValLen'] < availableAttrs[attr]['maxValLen']:
+                        entry['maxValLen'] = availableAttrs[attr]['maxValLen']
+                    if entry['maxAttrLen'] < len(attr):
+                        entry['maxAttrLen'] = len(attr)
                     #убираем атрибут
                     del availableAttrs[attr]
             if len(entry['attrs']) > 0:
@@ -137,7 +142,8 @@ while True:
 
             outputOrder += [{
                 'attrs': [maxAttr],
-                'maxlen': availableAttrs[maxAttr]['maxlen']
+                'maxValLen': availableAttrs[maxAttr]['maxValLen'],
+                'maxAttrLen': len(maxAttr)
             }]
 
             del availableAttrs[maxAttr]
@@ -146,17 +152,25 @@ while True:
         result = ''
         for el in parser.rows:
             row = '<' + el['tag'] + ' ' * (maxTagLength - len(el['tag']) + tagWhitespace)
-            #Расставляем атрибуты с приоритетом
+            #Расставляем атрибуты
+            blankAttrSpace = 0
+            #Пробегаемся по приоритетам
             for order in outputOrder:
-                hasAttr = False
-                #Пробегаемся по всем доступным атрибутам
+                rowAttr = None
+                #Пробегаемся по атрибутам внутри приоритета
                 for attr in order['attrs']:
-                    if attr in el['attrs']:
-                        row += attr + '="' + el['attrs'][attr] + '"' + ' ' * (order['maxlen'] - len(el['attrs'][attr]) + additionalWhitespace)
-                        hasAttr = True
-                        break      
-                if not hasAttr:
-                    row += ' ' * (len(attr) + order['maxlen'] + 3 + additionalWhitespace)    
+                    aVal = el['attrs'].pop(attr, None)
+                    if aVal != None and rowAttr == None:
+                        rowAttr = attr + '="' + aVal + '"' + ' ' * (order['maxAttrLen'] - len(attr) + order['maxValLen'] - len(aVal) + additionalWhitespace)
+                if rowAttr == None:
+                    blankAttrSpace += order['maxAttrLen'] + order['maxValLen'] + 3 + additionalWhitespace
+                else:
+                    if removeBlankSpaceForLastAttr and len(el['attrs']) == 0:
+                        row += rowAttr
+                    else:
+                        row += ' ' * blankAttrSpace + rowAttr
+                    blankAttrSpace = 0
+            
             #Закрываем строку
             result += row.rstrip() + '/>\n'
             
