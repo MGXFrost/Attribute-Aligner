@@ -64,7 +64,7 @@ def getSettingsFromForm(window1):
         prior = []
         for a in r.split(','):
             a = a.strip()
-            if ' ' not in a:
+            if ' ' not in a and len(a) > 0:
                 prior += [a]
         if len(prior) > 0:
             priorArr += [prior]
@@ -106,10 +106,22 @@ def loadSettings(fname):
             if stgName in readSettings:
                 settings[stgName] = readSettings[stgName]
             else:
-                rewriteConfig = True
-            
+                rewriteConfig = True  
     except (FileNotFoundError, json.JSONDecodeError):
         rewriteConfig = True
+    
+    # Убираем пустые значения из приоритетов
+    new_priorities = []
+    while len(settings['priorities']) > 0:
+        priorInArr = settings['priorities'].pop()
+        priorOutArr = []
+        while len(priorInArr) > 0:
+            prior = priorInArr.pop().strip()
+            if ' ' not in prior and len(prior) > 0:
+                priorOutArr = [prior] + priorOutArr
+        if len(priorOutArr) > 0:
+            new_priorities = [priorOutArr] + new_priorities
+    settings['priorities'] = new_priorities
 
     if rewriteConfig:
         saveSettings(fname)
@@ -158,7 +170,7 @@ col2 = [
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
         [sg.Checkbox('Remove blank space for last attr', key="removeBlankSpaceForLastAttr")],
-        [sg.Button("Save settings")]
+        [sg.Button("Save settings"), sg.Button("Reload settings")]
     ])]
 ]
 
@@ -183,6 +195,9 @@ while True:
     elif event == 'Save settings':
         getSettingsFromForm(window)
         saveSettings(filename)
+    elif event == 'Reload settings':
+        loadSettings(filename)
+        putSettingsToForm(window)
     elif event == "Clear input":
         window.Element('Input').update(value='')
     elif event == "Copy output":
