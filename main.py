@@ -58,21 +58,38 @@ def updateSettingsIntval(settingName, windowElement, restirct="any"):
         windowElement.update(a1)
 
 def getSettingsFromForm(window1):
-    updateSettingsIntval('additionalWhitespace', window1.Element('additionalWhitespace'), "pos")
+    # Парсим приоритеты
+    priorArr = []
+    for r in window1.Element('attrPriorities').get().split('\n'):
+        prior = []
+        for a in r.split(','):
+            a = a.strip()
+            if ' ' not in a:
+                prior += [a]
+        if len(prior) > 0:
+            priorArr += [prior]
+    settings['priorities'] = priorArr
+    putSettingsToForm(window1, 0)
+
     updateSettingsIntval('tagWhitespace', window1.Element('tagWhitespace'), "pos")
+    updateSettingsIntval('additionalWhitespace', window1.Element('additionalWhitespace'), "pos")
     settings['removeBlankSpaceForLastAttr'] = window1.Element('removeBlankSpaceForLastAttr').get()
 
-def putSettingsToForm(window1):
-    window1.Element('additionalWhitespace').update(settings['additionalWhitespace'])
-    window1.Element('tagWhitespace').update(settings['tagWhitespace'])
-    window1.Element('removeBlankSpaceForLastAttr').update(settings['removeBlankSpaceForLastAttr'])
-    settings_priorities = ''
-    for p in settings['priorities']:
-        s = ''
-        for a in p:
-            s += a + ', '
-        settings_priorities += s[:-2] + "\n"
-    window1.Element('settings_priorities').update(settings_priorities)
+def putSettingsToForm(window1, pos=-1):
+    if pos == -1 or pos == 0:
+        attrPriorities = ''
+        for p in settings['priorities']:
+            s = ''
+            for a in p:
+                s += a + ', '
+            attrPriorities += s[:-2] + "\n"
+        window1.Element('attrPriorities').update(attrPriorities)
+    if pos == -1 or pos == 1:
+        window1.Element('tagWhitespace').update(settings['tagWhitespace'])
+    if pos == -1 or pos == 2:
+        window1.Element('additionalWhitespace').update(settings['additionalWhitespace'])
+    if pos == -1 or pos == 3:
+        window1.Element('removeBlankSpaceForLastAttr').update(settings['removeBlankSpaceForLastAttr'])
 
 def saveSettings(fname):
     configFile = open(fname, 'w')
@@ -134,10 +151,10 @@ col1 = [
     [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
 ]
 col2 = [
-    [sg.Frame("(Debug) Available attributes", [[sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)]])],
+    [sg.Frame("(Debug) Found attributes", [[sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)]])],
     [sg.Frame("Settings", [
         [sg.Text("Attribute priorities")],
-        [sg.Multiline(size=(25, 10), expand_x=True, key="settings_priorities", font='Consolas 12', disabled=True)],
+        [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
         [sg.Checkbox('Remove blank space for last attr', key="removeBlankSpaceForLastAttr")],
@@ -175,7 +192,7 @@ while True:
     elif event == 'Format' or event == 'Format from clipboard':
         #Получим настройки с формы
         getSettingsFromForm(window)
-        
+
         inputStr = ''
         if event == 'Format from clipboard':
             inputStr = pyperclip.paste()
