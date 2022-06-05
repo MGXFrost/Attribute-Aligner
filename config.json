@@ -31,5 +31,6 @@
 		[
 			"std_icon"
 		]
-	]
+	],
+	"putGetFill": 1
 }

@@ -25,12 +25,20 @@ settings = {
         ['caption'],
         ['onclick'],
         ['std_icon']
-    ]
+    ],
+    #Изменение значения в атрибутах put/get: 0 - без изменений, 1 - заполнять пустые, 2 - форматировать все
+    'putGetFill': 0
 }
 # Имя файла кофигурации
 filename = 'config.json'
 
 ######################## Code ########################
+putGetFill_values = [
+    'Do not change',
+    'Fill empty',
+    'Format All'
+]
+
 inputStr = ''
 inputStrLower = ''
 
@@ -73,10 +81,15 @@ def getSettingsFromForm(window1):
             priorArr += [prior]
     settings['priorities'] = priorArr
     putSettingsToForm(window1, 0)
-
+    
     updateSettingsIntval('tagWhitespace', window1.Element('tagWhitespace'), "pos")
+    
     updateSettingsIntval('additionalWhitespace', window1.Element('additionalWhitespace'), "pos")
+
     settings['removeBlankSpaceForLastAttr'] = window1.Element('removeBlankSpaceForLastAttr').get()
+
+    settings['putGetFill'] = putGetFill_values.index(window1.Element('putGetFill').get())
+
 
 def putSettingsToForm(window1, pos=-1):
     if pos == -1 or pos == 0:
@@ -93,6 +106,8 @@ def putSettingsToForm(window1, pos=-1):
         window1.Element('additionalWhitespace').update(settings['additionalWhitespace'])
     if pos == -1 or pos == 3:
         window1.Element('removeBlankSpaceForLastAttr').update(settings['removeBlankSpaceForLastAttr'])
+    if pos == -1 or pos == 4:
+        window1.Element('putGetFill').update(putGetFill_values[settings['putGetFill']])
 
 def saveSettings(fname):
     configFile = open(fname, 'w')
@@ -126,6 +141,11 @@ def loadSettings(fname):
             new_priorities = [priorOutArr] + new_priorities
     settings['priorities'] = new_priorities
 
+    #putGetFill
+    if settings['putGetFill'] < 0 or settings['putGetFill'] > (len(putGetFill_values) - 1):
+        settings['putGetFill'] = 0
+        rewriteConfig = True
+
     if rewriteConfig:
         saveSettings(fname)
 
@@ -136,8 +156,27 @@ class MyHTMLParser(HTMLParser):
         # Костыль для сохранения регистра букв
         ind = inputStrLower.find(tag)
         entry = {'tag': inputStr[ind:(ind + len(tag))], 'attrs': {}}
+        # Конец костыля
+        
         for attr in attrs:
             entry['attrs'][attr[0]] = attr[1]
+
+        #Автоисправление put/get атрибутов
+        putVal = entry['attrs'].get('put', None)
+        getVal = entry['attrs'].get('get', None)
+        nameVal = entry['attrs'].get('name', None)
+        if nameVal != None and nameVal != '' and (putVal != None or getVal != None):
+            if settings['putGetFill'] == 1:
+                if putVal != None and putVal == '':
+                    entry['attrs']['put'] = 'p' + nameVal[0].upper() + nameVal[1:]
+                if getVal != None and getVal == '':
+                    entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
+            elif settings['putGetFill'] == 2:
+                if putVal != None:
+                    entry['attrs']['put'] = 'p' + nameVal[0].upper() + nameVal[1:]
+                if getVal != None:
+                    entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
+
         self.rows.append(entry)
     def init_arrays(self):
         self.rows = []
@@ -172,9 +211,11 @@ col2 = [
     [sg.Frame("Settings", [
         [sg.Text("Attribute priorities")],
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
+        [sg.Text("Format put/get attributes")],
+        [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip="Put/Get attribute manipulation", key="putGetFill")],
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
-        [sg.Checkbox('Remove blank space for last attr', key="removeBlankSpaceForLastAttr")],
+        [sg.Checkbox('Remove blank space for last attribute', key="removeBlankSpaceForLastAttr")],
         [sg.Button("Save settings"), sg.Button("Reload settings")]
     ])]
 ]
