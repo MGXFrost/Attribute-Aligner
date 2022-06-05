@@ -212,7 +212,7 @@ col2 = [
         [sg.Text("Attribute priorities")],
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
         [sg.Text("Format put/get attributes")],
-        [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip="Put/Get attribute manipulation", key="putGetFill")],
+        [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip="Put/Get attribute manipulation", key="putGetFill", readonly=True)],
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
         [sg.Checkbox('Remove blank space for last attribute', key="removeBlankSpaceForLastAttr")],
