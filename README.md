@@ -6,4 +6,4 @@
 #### Compile into .exe (using pyinstaller lib):
 > pip install pyinstaller
 >
-> pyinstaller --onefile main.py
+> pyinstaller --onefile main.pyw
