@@ -200,10 +200,10 @@ cat = """
 # Create the window
 col1 = [
     [sg.Text("Input")],
-    [sg.Multiline(size=(90, 15), key="Input", font='Consolas 12', horizontal_scroll=True)],
+    [sg.Multiline(key="Input", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)],
     [sg.Button("Clear input")],
     [sg.Text("Output")],
-    [sg.Multiline(size=(90, 15), key="Output", font='Consolas 12', horizontal_scroll=True)],
+    [sg.Multiline(key="Output", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)],
     [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
 ]
 col2 = [
@@ -220,11 +220,17 @@ col2 = [
     ])]
 ]
 
+#expand_y
+# ^
+# |
+# |----> expand_x
+#size=(x, y)
+
 layout = [
-    [sg.Column(col1), sg.Column(col2, vertical_alignment="top")]
+    [sg.Column(col1, expand_x=True, expand_y=True), sg.Column(col2, vertical_alignment="top")]
 ]
 
-window = sg.Window(title = "Attribute Sorter&Aligner V0.2", layout = layout, finalize=True)
+window = sg.Window(title = "Attribute Sorter&Aligner V0.3", layout = layout, finalize=True, resizable=True)
 parser = MyHTMLParser()
 
 # Load configuration
