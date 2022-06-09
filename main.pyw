@@ -204,15 +204,17 @@ cat = """
 
 # Create the window
 col1 = [
-    [sg.Frame("Input", [[sg.Multiline(key="Input", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)]], expand_x=True, expand_y=True)],
+    [sg.Text("Input")],
+    [sg.Multiline(key="Input", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)],
     [sg.Button("Clear input")],
-    [sg.Frame("Output", [[sg.Multiline(key="Output", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)]], expand_x=True, expand_y=True)],
+    [sg.Text("Output")],
+    [sg.Multiline(key="Output", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)],
     [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
 ]
 col2 = [
     [sg.Frame("(Debug) Found attributes", [[sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)]])],
     [sg.Frame("Settings", [
-        [sg.Text("Attribute priorities (sorting order)")],
+        [sg.Text("Attribute priorities")],
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
         [sg.Text("Format put/get attributes")],
         [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip=putGetFill_tooltip, key="putGetFill", readonly=True)],
