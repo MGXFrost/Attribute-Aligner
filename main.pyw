@@ -214,7 +214,7 @@ col1 = [
 col2 = [
     [sg.Frame("(Debug) Found attributes", [[sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)]])],
     [sg.Frame("Settings", [
-        [sg.Text("Attribute priorities")],
+        [sg.Text("Attribute priorities (sorting order)")],
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
         [sg.Text("Format put/get attributes")],
         [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip=putGetFill_tooltip, key="putGetFill", readonly=True)],
