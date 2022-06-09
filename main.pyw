@@ -38,6 +38,11 @@ putGetFill_values = [
     'Fill empty',
     'Format All'
 ]
+putGetFill_tooltip = '''Formats put/get attributes.
+Do not change - leaves in the original version
+Fill empty - fills empty attributes as follows: <component name="cmp1" put=""> -> <component name="cmp1" put="pCmp1">
+Format All - similar to 'Fill empty', but also affects non-empty
+'''
 
 inputStr = ''
 inputStrLower = ''
@@ -212,7 +217,7 @@ col2 = [
         [sg.Text("Attribute priorities")],
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
         [sg.Text("Format put/get attributes")],
-        [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip="Put/Get attribute manipulation", key="putGetFill", readonly=True)],
+        [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip=putGetFill_tooltip, key="putGetFill", readonly=True)],
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
         [sg.Checkbox('Remove blank space for last attribute', key="removeBlankSpaceForLastAttr")],
