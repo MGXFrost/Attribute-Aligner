@@ -27,7 +27,8 @@ settings = {
         ['std_icon']
     ],
     #Изменение значения в атрибутах put/get: 0 - без изменений, 1 - заполнять пустые, 2 - форматировать все
-    'putGetFill': 0
+    'putGetFill': 0,
+    'closingTagStyle': 0
 }
 # Имя файла кофигурации
 filename = 'config.json'
@@ -43,6 +44,11 @@ Do not change - leaves in the original version
 Fill empty - fills empty attributes as follows: <component name="cmp1" put=""> -> <component name="cmp1" put="pCmp1">
 Format All - similar to 'Fill empty', but also affects non-empty
 '''
+closingTagStyle_values = [
+    'Short',
+    'Full'
+]
+
 
 inputStr = ''
 inputStrLower = ''
@@ -95,6 +101,8 @@ def getSettingsFromForm(window1):
 
     settings['putGetFill'] = putGetFill_values.index(window1.Element('putGetFill').get())
 
+    settings['closingTagStyle'] = closingTagStyle_values.index(window1.Element('closingTagStyle').get())
+
 
 def putSettingsToForm(window1, pos=-1):
     if pos == -1 or pos == 0:
@@ -113,6 +121,8 @@ def putSettingsToForm(window1, pos=-1):
         window1.Element('removeBlankSpaceForLastAttr').update(settings['removeBlankSpaceForLastAttr'])
     if pos == -1 or pos == 4:
         window1.Element('putGetFill').update(putGetFill_values[settings['putGetFill']])
+    if pos == -1 or pos == 5:
+        window1.Element('closingTagStyle').update(closingTagStyle_values[settings['closingTagStyle']])
 
 def saveSettings(fname):
     configFile = open(fname, 'w')
@@ -160,7 +170,11 @@ class MyHTMLParser(HTMLParser):
     def handle_starttag(self, tag, attrs):
         # Костыль для сохранения регистра букв
         ind = inputStrLower.find(tag)
-        entry = {'tag': inputStr[ind:(ind + len(tag))], 'attrs': {}}
+        entry = {
+            'tag': inputStr[ind:(ind + len(tag))], 
+            'attrs': {},
+            'content': ''
+            }
         # Конец костыля
         
         for attr in attrs:
@@ -183,6 +197,11 @@ class MyHTMLParser(HTMLParser):
                     entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
 
         self.rows.append(entry)
+    def handle_data(self, data):
+        outdata = data.strip()
+        #Присваиваем последнему элементу данные
+        if len(self.rows) > 0 and len(outdata) > 0:
+            self.rows[-1]['content'] = outdata
     def init_arrays(self):
         self.rows = []
 
@@ -218,6 +237,8 @@ col2 = [
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
         [sg.Text("Format put/get attributes")],
         [sg.Combo(values=putGetFill_values, default_value=putGetFill_values[0], tooltip=putGetFill_tooltip, key="putGetFill", readonly=True)],
+        [sg.Text("Closing tag style")],
+        [sg.Combo(values=closingTagStyle_values, default_value=closingTagStyle_values[0], tooltip='Closing tag style', key="closingTagStyle", readonly=True)],
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
         [sg.Checkbox('Remove blank space for last attribute', key="removeBlankSpaceForLastAttr")],
@@ -368,7 +389,16 @@ while True:
                     blankAttrSpace = 0
             
             # Закрываем строку
-            result += row.rstrip() + '/>\n'
+            # Формат закрывающего тэга плюс контент
+            closingTag = ''
+            if len(el['content']) > 0:
+                closingTag = '>' + el['content'] + '</' + el['tag'] + '>'
+            elif settings['closingTagStyle'] == 1:
+                closingTag = '></' + el['tag'] + '>'
+            else:
+                closingTag = '/>'
+            
+            result += row.rstrip() + closingTag + '\n'
             
         window.Element('Output').update(value=result)
     #end while True

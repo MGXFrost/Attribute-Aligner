@@ -32,5 +32,6 @@
 			"std_icon"
 		]
 	],
-	"putGetFill": 1
+	"putGetFill": 0,
+	"closingTagStyle": 0
 }
