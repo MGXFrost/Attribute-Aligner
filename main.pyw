@@ -238,7 +238,10 @@ col1 = [
     [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
 ]
 col2 = [
-    [sg.Frame("(Debug) Found attributes", [[sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)]])],
+    [sg.Frame("(Debug) Found attributes", [
+        [sg.Multiline(size=(25, 10), expand_x=True, key="availableAttrs", font='Consolas 12', disabled=True)],
+        [sg.Button("Copy to priorities", key="copyFoundToPrior")]
+    ])],
     [sg.Frame("Settings", [
         [sg.Text("Attribute priorities (sorting order)")],
         [sg.Multiline(size=(25, 10), expand_x=True, key="attrPriorities", font='Consolas 12')],
@@ -290,6 +293,8 @@ while True:
         pyperclip.copy(values['Output'])
     elif event == "Cat":
         window.Element('Output').update(value=cat)
+    elif event == "copyFoundToPrior":
+        window.Element('attrPriorities').update(value=window.Element('availableAttrs').get())
     elif event == 'Format' or event == 'Format from clipboard':
         #Получим настройки с формы
         getSettingsFromForm(window)
