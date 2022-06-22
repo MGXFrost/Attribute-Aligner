@@ -26,9 +26,12 @@ settings = {
         ['onclick'],
         ['std_icon']
     ],
-    #Изменение значения в атрибутах put/get: 0 - без изменений, 1 - заполнять пустые, 2 - форматировать все
+    # Изменение значения в атрибутах put/get: 0 - без изменений, 1 - заполнять пустые, 2 - форматировать все
     'putGetFill': 0,
-    'closingTagStyle': 0
+    # Формат закрывающего тэга (для случая, когда контент элемент пуст): 0 - короткий />, 1 - полный ><elem/>
+    'closingTagStyle': 0,
+    # Не выравнивать атрибуты без приоритета (сортировка остается)
+    'doNotAlignNonPriorityAttrs': False
 }
 # Имя файла кофигурации
 filename = 'config.json'
@@ -103,6 +106,8 @@ def getSettingsFromForm(window1):
 
     settings['closingTagStyle'] = closingTagStyle_values.index(window1.Element('closingTagStyle').get())
 
+    settings['doNotAlignNonPriorityAttrs'] = window1.Element('doNotAlignNonPriorityAttrs').get()
+
 
 def putSettingsToForm(window1, pos=-1):
     if pos == -1 or pos == 0:
@@ -123,6 +128,8 @@ def putSettingsToForm(window1, pos=-1):
         window1.Element('putGetFill').update(putGetFill_values[settings['putGetFill']])
     if pos == -1 or pos == 5:
         window1.Element('closingTagStyle').update(closingTagStyle_values[settings['closingTagStyle']])
+    if pos == -1 or pos == 6:
+        window1.Element('doNotAlignNonPriorityAttrs').update(settings['doNotAlignNonPriorityAttrs'])
 
 def saveSettings(fname):
     configFile = open(fname, 'w')
@@ -242,6 +249,7 @@ col2 = [
         [sg.Input(size=(5, None), key="additionalWhitespace"), sg.Text("Whitespace after tag")],
         [sg.Input(size=(5, None), key="tagWhitespace"), sg.Text("Whitespace between attributes")],
         [sg.Checkbox('Remove blank space for last attribute', key="removeBlankSpaceForLastAttr")],
+        [sg.Checkbox('Do not align non-priority attributes', key="doNotAlignNonPriorityAttrs")],
         [sg.Button("Save settings"), sg.Button("Reload settings")]
     ])]
 ]
@@ -324,7 +332,8 @@ while True:
             entry = {
                 'attrs': [],
                 'maxValLen': 0,
-                'maxAttrLen': 0
+                'maxAttrLen': 0,
+                'isPriority': True
             }
             for attr in priority:
                 if attr in availableAttrs:
@@ -351,7 +360,8 @@ while True:
             outputOrder += [{
                 'attrs': [maxAttr],
                 'maxValLen': availableAttrs[maxAttr]['maxValLen'],
-                'maxAttrLen': len(maxAttr)
+                'maxAttrLen': len(maxAttr),
+                'isPriority': False
             }]
 
             del availableAttrs[maxAttr]
@@ -378,11 +388,15 @@ while True:
                 for attr in order['attrs']:
                     aVal = el['attrs'].pop(attr, None)
                     if aVal != None and rowAttr == None:
-                        rowAttr = attr + '="' + aVal + '"' + ' ' * (order['maxAttrLen'] - len(attr) + order['maxValLen'] - len(aVal) + settings['additionalWhitespace'])
+                        # При включенной настройке атрибуты без приоритета не выравниваем
+                        if settings['doNotAlignNonPriorityAttrs'] and not order['isPriority']:
+                            rowAttr = attr + '="' + aVal + '"' + ' ' * settings['additionalWhitespace']
+                        else:
+                            rowAttr = attr + '="' + aVal + '"' + ' ' * (order['maxAttrLen'] - len(attr) + order['maxValLen'] - len(aVal) + settings['additionalWhitespace'])
                 if rowAttr == None:
                     blankAttrSpace += order['maxAttrLen'] + order['maxValLen'] + 3 + settings['additionalWhitespace']
                 else:
-                    if settings['removeBlankSpaceForLastAttr'] and len(el['attrs']) == 0:
+                    if settings['doNotAlignNonPriorityAttrs'] and not order['isPriority'] or settings['removeBlankSpaceForLastAttr'] and len(el['attrs']) == 0:
                         row += rowAttr
                     else:
                         row += ' ' * blankAttrSpace + rowAttr

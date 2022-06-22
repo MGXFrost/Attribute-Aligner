@@ -33,5 +33,6 @@
 		]
 	],
 	"putGetFill": 0,
-	"closingTagStyle": 0
+	"closingTagStyle": 0,
+	"doNotAlignNonPriorityAttrs": true
 }
