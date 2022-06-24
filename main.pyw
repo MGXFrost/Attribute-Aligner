@@ -52,9 +52,17 @@ closingTagStyle_values = [
     'Full'
 ]
 
-
+#Global variable definition
+foundAttrs = {}
 inputStr = ''
 inputStrLower = ''
+
+def hasPriorAttr(searchAttr):
+    for prior in settings['priorities']:
+        for attr in prior:
+            if attr == searchAttr:
+                return True
+    return False
 
 def getPriority(attr):
     for i, val in enumerate(settings['priorities']):
@@ -170,7 +178,6 @@ def loadSettings(fname):
 
     if rewriteConfig:
         saveSettings(fname)
-
 
 class MyHTMLParser(HTMLParser):
     rows = []
@@ -294,7 +301,12 @@ while True:
     elif event == "Cat":
         window.Element('Output').update(value=cat)
     elif event == "copyFoundToPrior":
-        window.Element('attrPriorities').update(value=window.Element('availableAttrs').get())
+        additionalAttrs = ''
+        for key in foundAttrs:
+            if not hasPriorAttr(key):
+                additionalAttrs += '\n' + key
+        if additionalAttrs != '':
+            window.Element('attrPriorities').update(value=window.Element('attrPriorities').get() + additionalAttrs)
     elif event == 'Format' or event == 'Format from clipboard':
         #Получим настройки с формы
         getSettingsFromForm(window)
@@ -329,7 +341,14 @@ while True:
                     availableAttrs[attr]['count'] += 1
                     if availableAttrs[attr]['maxValLen'] < len(el['attrs'][attr]):
                         availableAttrs[attr]['maxValLen'] = len(el['attrs'][attr])
-        
+        #foundAttrs не изменяется в алгоритме
+        foundAttrs = availableAttrs.copy()
+        # Отображаем атрибуты в окне
+        avAttrStr = ''
+        for a in foundAttrs:
+            avAttrStr += a + "\n"
+        window.Element('availableAttrs').update(value=avAttrStr)
+
         # Сортируем атрибуты
         outputOrder = []
         # Сортировка по приоритетам
@@ -370,15 +389,6 @@ while True:
             }]
 
             del availableAttrs[maxAttr]
-
-        # Отображаем атрибуты в окне
-        avAttrStr = ''
-        for p in outputOrder:
-            s = ''
-            for a in p['attrs']:
-                s += a + ', '
-            avAttrStr += s[:-2] + "\n"
-        window.Element('availableAttrs').update(value=avAttrStr)
 
         # Создаем новые строки
         result = ''

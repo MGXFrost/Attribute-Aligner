@@ -30,6 +30,18 @@
 		],
 		[
 			"std_icon"
+		],
+		[
+			"field"
+		],
+		[
+			"excelfield"
+		],
+		[
+			"not_append_ds"
+		],
+		[
+			"sort"
 		]
 	],
 	"putGetFill": 0,
