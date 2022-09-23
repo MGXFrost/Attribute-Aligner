@@ -44,7 +44,7 @@
 			"sort"
 		]
 	],
-	"putGetFill": 0,
+	"putGetFill": 3,
 	"closingTagStyle": 0,
 	"doNotAlignNonPriorityAttrs": true
 }

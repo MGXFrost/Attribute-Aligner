@@ -39,13 +39,15 @@ filename = 'config.json'
 ######################## Code ########################
 putGetFill_values = [
     'Do not change',
-    'Fill empty',
-    'Format All'
+    'Fill empty using p|g+"name"',
+    'Format ALL using p|g+"name"',
+    'Remove get, empty put'
 ]
 putGetFill_tooltip = '''Formats put/get attributes.
 Do not change - leaves in the original version
-Fill empty - fills empty attributes as follows: <component name="cmp1" put=""> -> <component name="cmp1" put="pCmp1">
-Format All - similar to 'Fill empty', but also affects non-empty
+Fill empty using p|g+name - fills empty attributes as follows: <component name="cmp1" put=""> -> <component name="cmp1" put="pCmp1">
+Format ALL using p|g+name - similar to 'Fill empty', but also affects non-empty
+Remove get, empty put - (current rules) removes get attribute and empties put according to the current regulation
 '''
 closingTagStyle_values = [
     'Short',
@@ -90,7 +92,7 @@ def updateSettingsIntval(settingName, windowElement, restirct="any"):
         settings[settingName] = a1
         windowElement.update(a1)
 
-def getSettingsFromForm(window1):
+def getPriorities(window1):
     # Парсим приоритеты
     priorArr = []
     for r in window1.Element('attrPriorities').get().split('\n'):
@@ -102,6 +104,9 @@ def getSettingsFromForm(window1):
         if len(prior) > 0:
             priorArr += [prior]
     settings['priorities'] = priorArr
+
+def getSettingsFromForm(window1):
+    getPriorities(window1)
     putSettingsToForm(window1, 0)
     
     updateSettingsIntval('tagWhitespace', window1.Element('tagWhitespace'), "pos")
@@ -198,24 +203,30 @@ class MyHTMLParser(HTMLParser):
         putVal = entry['attrs'].get('put', None)
         getVal = entry['attrs'].get('get', None)
         nameVal = entry['attrs'].get('name', None)
-        if nameVal != None and nameVal != '' and (putVal != None or getVal != None):
-            if settings['putGetFill'] == 1:
-                if putVal != None and putVal == '':
-                    entry['attrs']['put'] = 'p' + nameVal[0].upper() + nameVal[1:]
-                if getVal != None and getVal == '':
-                    entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
-            elif settings['putGetFill'] == 2:
-                if putVal != None:
-                    entry['attrs']['put'] = 'p' + nameVal[0].upper() + nameVal[1:]
-                if getVal != None:
-                    entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
+        if settings['putGetFill'] == 1 and nameVal != None and nameVal != '':
+            if putVal != None and putVal == '':
+                entry['attrs']['put'] = 'p' + nameVal[0].upper() + nameVal[1:]
+            if getVal != None and getVal == '':
+                entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
+        elif settings['putGetFill'] == 2 and nameVal != None and nameVal != '':
+            if putVal != None:
+                entry['attrs']['put'] = 'p' + nameVal[0].upper() + nameVal[1:]
+            if getVal != None:
+                entry['attrs']['get'] = 'g' + nameVal[0].upper() + nameVal[1:]
+        elif settings['putGetFill'] == 3:
+            if putVal != None:
+                entry['attrs']['put'] = ''
+            if getVal != None:
+                entry['attrs'].pop('get') 
 
         self.rows.append(entry)
+
     def handle_data(self, data):
         outdata = data.strip()
         #Присваиваем последнему элементу данные
         if len(self.rows) > 0 and len(outdata) > 0:
             self.rows[-1]['content'] = outdata
+
     def init_arrays(self):
         self.rows = []
 
@@ -242,7 +253,7 @@ col1 = [
     [sg.Button("Clear input")],
     [sg.Text("Output")],
     [sg.Multiline(key="Output", font='Consolas 12', horizontal_scroll=True, expand_x=True, expand_y=True)],
-    [sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output"), sg.Button("Cat")]
+    [sg.Column([[sg.Button("Format"), sg.Button("Format from clipboard"), sg.Button("Copy output")]]), sg.Column([[sg.Button("Cat", key='Cat', visible=False)]], key='CatWrapper', expand_x=True)]
 ]
 col2 = [
     [sg.Frame("(Debug) Found attributes", [
@@ -275,6 +286,10 @@ layout = [
 ]
 
 window = sg.Window(title = "Attribute Sorter&Aligner V0.3", layout = layout, finalize=True, resizable=True)
+#Events
+window['CatWrapper'].bind('<Enter>', '+mouseOver')
+window['CatWrapper'].bind('<Leave>', '+mouseAway')
+
 parser = MyHTMLParser()
 
 # Load configuration
@@ -300,7 +315,13 @@ while True:
         pyperclip.copy(values['Output'])
     elif event == "Cat":
         window.Element('Output').update(value=cat)
+    elif event == "CatWrapper+mouseOver":
+        window.Element('Cat').update(visible=True)
+    elif event == "CatWrapper+mouseAway":
+        window.Element('Cat').update(visible=False)
     elif event == "copyFoundToPrior":
+        getPriorities(window)
+        putSettingsToForm(window, 0)
         additionalAttrs = ''
         for key in foundAttrs:
             if not hasPriorAttr(key):
